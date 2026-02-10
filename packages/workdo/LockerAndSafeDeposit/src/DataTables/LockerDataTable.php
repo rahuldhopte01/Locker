@@ -11,56 +11,60 @@ use Yajra\DataTables\Services\DataTable;
 
 class LockerDataTable extends DataTable
 {
-    /**
-     * Build the DataTable class.
-     *
-     * @param QueryBuilder $query Results from query() method.
-     */
     public function dataTable(QueryBuilder $query): EloquentDataTable
     {
-        $rowColumn = ['locker_number' , 'price_of_month' , 'price_of_year' , 'status'];
-        $dataTable =    (new EloquentDataTable($query))
+        $rowColumn = ['locker_number', 'location', 'size', 'monthly_rate', 'status', 'is_available'];
+        $dataTable = (new EloquentDataTable($query))
             ->addIndexColumn()
-            ->editColumn('locker_number',function(Locker $locker){
-                return ' <a href="#" class="btn btn-outline-primary">'. '#LOC' . sprintf("%05d",$locker->locker_number) .'</a>';
+            ->editColumn('locker_number', function (Locker $locker) {
+                return '<a href="#" class="btn btn-outline-primary">' . e($locker->locker_number) . '</a>';
             })
-            ->editColumn('price_of_month', function (Locker $locker) {
-                return currency_format_with_sym($locker->price_of_month);
+            ->addColumn('location', function (Locker $locker) {
+                return $locker->location ? e($locker->location->building) : '—';
             })
-            ->editColumn('price_of_year', function (Locker $locker) {
-                return currency_format_with_sym($locker->price_of_year);
+            ->editColumn('size', function (Locker $locker) {
+                return Locker::$sizes[$locker->size] ?? e($locker->size);
+            })
+            ->editColumn('monthly_rate', function (Locker $locker) {
+                return currency_format_with_sym($locker->monthly_rate) . ' ' . __('EUR');
             })
             ->editColumn('status', function (Locker $locker) {
-                if($locker->status == 'Available')
-                {
-                    $class = 'bg-primary';
-                }
-                elseif($locker->status == 'UnAvailable')
-                {
-                    $class = 'bg-danger';
-                }
-                return '<span class="badge fix_badges '.$class.' p-2 px-3">'. Locker::$status[$locker->status] .'</span>';
+                $classes = [
+                    'active'     => 'bg-primary',
+                    'inactive'   => 'bg-secondary',
+                    'reserved'   => 'bg-info',
+                    'maintenance'=> 'bg-warning',
+                ];
+                $class = $classes[$locker->status] ?? 'bg-secondary';
+                $label = Locker::$status[$locker->status] ?? $locker->status;
+                return '<span class="badge fix_badges ' . $class . ' p-2 px-3">' . e($label) . '</span>';
+            })
+            ->editColumn('is_available', function (Locker $locker) {
+                return $locker->is_available
+                    ? '<span class="badge bg-success">' . __('Yes') . '</span>'
+                    : '<span class="badge bg-danger">' . __('No') . '</span>';
             });
-            if (\Laratrust::hasPermission('locker edit') || \Laratrust::hasPermission('locker delete') ) {
-                $dataTable->addColumn('action', function (Locker $locker) {
-                    return view('locker-and-safe-deposit::locker.action', compact('locker'));
-                });
-                $rowColumn[] = 'action';
-            }
-            return $dataTable->rawColumns($rowColumn);   
+        if (\Laratrust::hasPermission('locker edit') || \Laratrust::hasPermission('locker delete')) {
+            $dataTable->addColumn('action', function (Locker $locker) {
+                return view('locker-and-safe-deposit::locker.action', compact('locker'));
+            });
+            $rowColumn[] = 'action';
+        }
+        return $dataTable->rawColumns($rowColumn);
     }
 
-    /**
-     * Get the query source of dataTable.
-     */
     public function query(Locker $model): QueryBuilder
     {
-        return $model->where('workspace', getActiveWorkSpace())->where('created_by', creatorId());  
+        $query = $model->newQuery()->with('location');
+        if (function_exists('getActiveWorkSpace')) {
+            $query->where('workspace', getActiveWorkSpace());
+        }
+        if (function_exists('creatorId')) {
+            $query->where('created_by', creatorId());
+        }
+        return $query;
     }
 
-    /**
-     * Optional method if you want to use the html builder.
-     */
     public function html(): HtmlBuilder
     {
         $dataTable = $this->builder()
@@ -95,19 +99,19 @@ class LockerDataTable extends DataTable
                     'extend' => 'print',
                     'text' => '<i class="fas fa-print me-2"></i> ' . __('Print'),
                     'className' => 'btn btn-light text-primary dropdown-item',
-                    'exportOptions' => ['columns' => [0, 1, 3]],
+                    'exportOptions' => ['columns' => [0, 1, 2, 3, 4, 5]],
                 ],
                 [
                     'extend' => 'csv',
                     'text' => '<i class="fas fa-file-csv me-2"></i> ' . __('CSV'),
                     'className' => 'btn btn-light text-primary dropdown-item',
-                    'exportOptions' => ['columns' => [0, 1, 3]],
+                    'exportOptions' => ['columns' => [0, 1, 2, 3, 4, 5]],
                 ],
                 [
                     'extend' => 'excel',
                     'text' => '<i class="fas fa-file-excel me-2"></i> ' . __('Excel'),
                     'className' => 'btn btn-light text-primary dropdown-item',
-                    'exportOptions' => ['columns' => [0, 1, 3]],
+                    'exportOptions' => ['columns' => [0, 1, 2, 3, 4, 5]],
                 ],
             ],
         ];
@@ -165,39 +169,27 @@ class LockerDataTable extends DataTable
         return $dataTable;
     }
 
-    /**
-     * Get the dataTable columns definition.
-     */
     public function getColumns(): array
     {
         $column = [
             Column::make('id')->searchable(false)->visible(false)->exportable(false)->printable(false),
             Column::make('No')->title(__('No'))->data('DT_RowIndex')->name('DT_RowIndex')->searchable(false)->orderable(false),
             Column::make('locker_number')->title(__('Locker Number')),
-            Column::make('locker_type')->title(__('Locker Type')),
-            Column::make('locker_size')->title(__('Locker Size')),
-            Column::make('max_capacity')->title(__('Max Capacity')),
-            Column::make('price_of_month')->title(__('Price Of Month')),
-            Column::make('price_of_year')->title(__('Price Of Year')),
+            Column::make('location')->title(__('Location'))->orderable(false)->searchable(false),
+            Column::make('size')->title(__('Size')),
+            Column::make('monthly_rate')->title(__('Monthly Rate') . ' (EUR)'),
             Column::make('status')->title(__('Status')),
+            Column::make('is_available')->title(__('Available')),
         ];
         if (\Laratrust::hasPermission('locker edit') || \Laratrust::hasPermission('locker delete')) {
-            $action =[
-                Column::computed('action')->title(__('Action'))
-                    ->exportable(false)
-                    ->printable(false)
-                    ->width(60)
-                    
-                ];
-
-            $column = array_merge($column , $action);
+            $column[] = Column::computed('action')->title(__('Action'))
+                ->exportable(false)
+                ->printable(false)
+                ->width(60);
         }
         return $column;
     }
 
-    /**
-     * Get the filename for export.
-     */
     protected function filename(): string
     {
         return 'Lockers_' . date('YmdHis');

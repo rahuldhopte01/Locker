@@ -11,39 +11,49 @@ class Locker extends Model
 
     protected $fillable = [
         'locker_number',
-        'locker_type',
-        'locker_size',
-        'max_capacity',
-        'price_of_month',
-        'price_of_year',
-        'status',
         'location_id',
+        'size',
+        'status',
+        'monthly_rate',
         'is_available',
         'workspace',
-        'created_by'
+        'created_by',
     ];
 
     protected $casts = [
         'is_available' => 'boolean',
+        'monthly_rate' => 'decimal:2',
     ];
 
-    public static $status = [
-        'Available'   => 'Available',
-        'UnAvailable' => 'UnAvailable',
-    ];
-
+    /** Size enum: small, medium, large, extra_large */
     public static $sizes = [
-        'small'  => 'Small',
-        'medium' => 'Medium',
-        'large'  => 'Large',
+        'small'       => 'Small',
+        'medium'      => 'Medium',
+        'large'       => 'Large',
+        'extra_large' => 'Extra Large',
+    ];
+
+    /** Status enum: active, inactive, reserved, maintenance */
+    public static $status = [
+        'active'      => 'Active',
+        'inactive'     => 'Inactive',
+        'reserved'     => 'Reserved',
+        'maintenance'  => 'Maintenance',
     ];
 
     public function location()
     {
         return $this->belongsTo(LockerLocation::class, 'location_id');
     }
+
     public function bookings()
     {
         return $this->hasMany(LockerBooking::class, 'locker_id');
+    }
+
+    /** Monthly rate in EUR (spec). For yearly use monthly_rate * 12. */
+    public function getYearlyRateAttribute()
+    {
+        return (float) $this->monthly_rate * 12;
     }
 }

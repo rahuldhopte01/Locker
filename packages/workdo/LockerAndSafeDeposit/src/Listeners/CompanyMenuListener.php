@@ -28,6 +28,19 @@ class CompanyMenuListener
         ]);
         $menu->add([
             'category' => 'Operations',
+            'title' => __('Locations'),
+            'icon' => '',
+            'name' => 'locations',
+            'parent' => 'lockerandsafedeposit',
+            'order' => 3,
+            'ignore_if' => [],
+            'depend_on' => [],
+            'route' => 'locker-location.index',
+            'module' => $module,
+            'permission' => 'locker_location manage'
+        ]);
+        $menu->add([
+            'category' => 'Operations',
             'title' => __('Lockers'),
             'icon' => '',
             'name' => 'lockers',

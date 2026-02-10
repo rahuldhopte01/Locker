@@ -17,6 +17,7 @@ use Workdo\LockerAndSafeDeposit\Http\Controllers\LockerBookingController;
 use Workdo\LockerAndSafeDeposit\Http\Controllers\LockerController;
 use Workdo\LockerAndSafeDeposit\Http\Controllers\LockerKeyController;
 use Workdo\LockerAndSafeDeposit\Http\Controllers\LockerMaintenanceController;
+use Workdo\LockerAndSafeDeposit\Http\Controllers\LocationController;
 use Workdo\LockerAndSafeDeposit\Http\Controllers\LockerMembershipController;
 use Workdo\LockerAndSafeDeposit\Http\Controllers\LockerRenewalController;
 
@@ -24,6 +25,7 @@ Route::group(['middleware' => ['web','auth','verified','PlanModuleCheck:LockerAn
     Route::prefix('lockerandsafedeposit')->group(function () {
         
         Route::resource('locker-customer', CustomerController::class);
+        Route::resource('locker-location', LocationController::class);
         Route::resource('locker', LockerController::class);
 
         Route::resource('locker-maintenance', LockerMaintenanceController::class);

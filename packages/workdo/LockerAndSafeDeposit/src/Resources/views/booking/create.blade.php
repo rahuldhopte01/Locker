@@ -14,9 +14,9 @@
                     <option value="">{{ __('Select Locker Number') }}</option>
                     @foreach ($lockers as $locker)
                         <option value="{{ $locker->id }}"
-                            data-monthly-amount="{{ $locker->price_of_month }}"
-                            data-yearly-amount="{{ $locker->price_of_year }}">
-                            {{ '#LOC' . sprintf("%05d",$locker->locker_number) }}
+                            data-monthly-amount="{{ $locker->monthly_rate }}"
+                            data-yearly-amount="{{ $locker->yearly_rate ?? ($locker->monthly_rate * 12) }}">
+                            {{ $locker->locker_number }}
                         </option>
                     @endforeach
                 </select>

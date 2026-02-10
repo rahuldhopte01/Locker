@@ -1,10 +1,16 @@
 {{ Form::open(['route' => 'locker-customer.store', 'method' => 'post', 'class'=>'needs-validation','novalidate' , 'enctype' => 'multipart/form-data']) }}
 <div class="modal-body">
     <div class="row">
-        <div class="col-lg-12">
+        <div class="col-lg-6">
             <div class="form-group">
-                {{ Form::label('name', __('Name'), ['class' => 'form-label']) }}<x-required></x-required>
-                {{ Form::text('name', null, ['class' => 'form-control', 'required' => 'required', 'placeholder' => __('Enter Name')]) }}
+                {{ Form::label('first_name', __('First Name'), ['class' => 'form-label']) }}<x-required></x-required>
+                {{ Form::text('first_name', null, ['class' => 'form-control', 'required' => 'required', 'placeholder' => __('Enter First Name')]) }}
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="form-group">
+                {{ Form::label('last_name', __('Last Name'), ['class' => 'form-label']) }}<x-required></x-required>
+                {{ Form::text('last_name', null, ['class' => 'form-control', 'required' => 'required', 'placeholder' => __('Enter Last Name')]) }}
             </div>
         </div>
         <div class="col-lg-12">
@@ -13,7 +19,16 @@
                 {{ Form::email('email', null, ['class' => 'form-control', 'required' => 'required', 'placeholder' => __('Enter Email')]) }}
             </div>
         </div>
-        <x-mobile name="contact_no" placeholder="{{__('Enter Contact Number')}}" label="{{__('Contact Number')}}"></x-mobile>
+        <x-mobile name="phone" placeholder="{{ __('Enter Phone') }}" label="{{ __('Phone') }}"></x-mobile>
+        <div class="col-lg-12">
+            <div class="form-group">
+                <div class="form-check form-switch">
+                    {{ Form::checkbox('is_active', 1, true, ['class' => 'form-check-input', 'id' => 'is_active']) }}
+                    {{ Form::label('is_active', __('Is Active'), ['class' => 'form-check-label']) }}
+                </div>
+                <small class="text-muted">{{ __('Customers do not have access to the system; they are only stored for locker assignment.') }}</small>
+            </div>
+        </div>
         <div class="col-lg-12">
             <div class="form-group">
                 {{ Form::label('address', __('Address'), ['class' => 'form-label']) }}

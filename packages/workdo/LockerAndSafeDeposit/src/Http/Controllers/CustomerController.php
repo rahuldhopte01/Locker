@@ -58,8 +58,10 @@ class CustomerController extends Controller
         {
             $validator = Validator::make(
                 $request->all(), [
-                                   'name'  => 'required',
-                                   'email' => 'required',
+                                   'first_name' => 'required',
+                                   'last_name'  => 'required',
+                                   'email'      => 'required|email',
+                                   'phone'      => 'nullable|string',
                                ]
             );
 
@@ -87,14 +89,16 @@ class CustomerController extends Controller
                 }
             }
 
-            $lockerCustomer             = new LockerCustomer();
-            $lockerCustomer->name       = $request->name;
-            $lockerCustomer->email      = $request->email;
-            $lockerCustomer->contact_no = $request->contact_no;
-            $lockerCustomer->address    = $request->address;
-            $lockerCustomer->id_proof   = json_encode($data) ;
-            $lockerCustomer->workspace  = getActiveWorkSpace();
-            $lockerCustomer->created_by = creatorId();
+            $lockerCustomer               = new LockerCustomer();
+            $lockerCustomer->first_name   = $request->first_name;
+            $lockerCustomer->last_name    = $request->last_name;
+            $lockerCustomer->email        = $request->email;
+            $lockerCustomer->phone        = $request->phone;
+            $lockerCustomer->address      = $request->address;
+            $lockerCustomer->id_proof     = json_encode($data);
+            $lockerCustomer->is_active    = $request->boolean('is_active', true);
+            $lockerCustomer->workspace    = getActiveWorkSpace();
+            $lockerCustomer->created_by   = creatorId();
             $lockerCustomer->save();
 
             event(new CreateLockerCustomer($request , $lockerCustomer));
@@ -149,8 +153,10 @@ class CustomerController extends Controller
         {
             $validator = Validator::make(
                     $request->all(), [
-                        'name'  => 'required',
-                        'email' => 'required',
+                        'first_name' => 'required',
+                        'last_name'  => 'required',
+                        'email'      => 'required|email',
+                        'phone'      => 'nullable|string',
                     ]
                 );
             if ($validator->fails()) {
@@ -181,11 +187,13 @@ class CustomerController extends Controller
                     $data[$latestKey] = ['image' => $path['url']];
                 }
             }
-            $lockerCustomer->name       = $request->name;
+            $lockerCustomer->first_name = $request->first_name;
+            $lockerCustomer->last_name  = $request->last_name;
             $lockerCustomer->email      = $request->email;
-            $lockerCustomer->contact_no = $request->contact_no;
+            $lockerCustomer->phone      = $request->phone;
             $lockerCustomer->address    = $request->address;
-            $lockerCustomer->id_proof   = json_encode($data) ;
+            $lockerCustomer->id_proof   = json_encode($data);
+            $lockerCustomer->is_active  = $request->boolean('is_active', true);
             $lockerCustomer->save();
 
             event(new UpdateLockerCustomer($request , $lockerCustomer));
@@ -207,15 +215,18 @@ class CustomerController extends Controller
         {
             $lockerCustomer = LockerCustomer::find($id);
             if (!empty($lockerCustomer)) {
-                $images        = json_decode($lockerCustomer->id_proof, true);
-                foreach($images as $image)
-                {
-                    delete_file($image['image']);
+                $images = json_decode($lockerCustomer->id_proof, true);
+                if (is_array($images)) {
+                    foreach ($images as $image) {
+                        if (!empty($image['image'])) {
+                            delete_file($image['image']);
+                        }
+                    }
                 }
                 $lockerCustomer->delete();
             }
 
-            event(new DestroyLockerCustomer($lockerCustomer));
+            event(new DestroyLockerCustomer($lockerCustomer ?? null));
 
             return redirect()->route('locker-customer.index')->with('success', __('The customer has been deleted.'));
         }

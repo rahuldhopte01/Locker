@@ -3,13 +3,13 @@
 namespace Workdo\LockerAndSafeDeposit\DataTables;
 
 use Illuminate\Database\Eloquent\Builder as QueryBuilder;
+use Workdo\LockerAndSafeDeposit\Entities\LockerLocation;
 use Yajra\DataTables\EloquentDataTable;
 use Yajra\DataTables\Html\Builder as HtmlBuilder;
 use Yajra\DataTables\Html\Column;
 use Yajra\DataTables\Services\DataTable;
-use Workdo\LockerAndSafeDeposit\Entities\LockerCustomer;
 
-class CustomerDataTable extends DataTable
+class LocationDataTable extends DataTable
 {
     /**
      * Build the DataTable class.
@@ -18,38 +18,40 @@ class CustomerDataTable extends DataTable
      */
     public function dataTable(QueryBuilder $query): EloquentDataTable
     {
-        $rowColumn = ['phone', 'created_at', 'is_active', 'address'];
+        $rowColumn = ['building', 'floor', 'section', 'address'];
         $dataTable = (new EloquentDataTable($query))
             ->addIndexColumn()
-            ->editColumn('phone', function (LockerCustomer $customer) {
-                return $customer->phone ?? '-';
+            ->editColumn('building', function (LockerLocation $location) {
+                return e($location->building);
             })
-            ->editColumn('created_at', function (LockerCustomer $customer) {
-                return $customer->created_at ? $customer->created_at->format('Y-m-d H:i') : '-';
+            ->editColumn('floor', function (LockerLocation $location) {
+                return $location->floor ? e($location->floor) : '—';
             })
-            ->editColumn('is_active', function (LockerCustomer $customer) {
-                return $customer->is_active
-                    ? '<span class="badge bg-success">' . __('Active') . '</span>'
-                    : '<span class="badge bg-secondary">' . __('Inactive') . '</span>';
+            ->editColumn('section', function (LockerLocation $location) {
+                return $location->section ? e($location->section) : '—';
             })
-            ->editColumn('address', function (LockerCustomer $customer) {
-                return $customer->address ?? '-';
+            ->editColumn('address', function (LockerLocation $location) {
+                return $location->address ? e(\Str::limit($location->address, 40)) : '—';
             });
-        if (\Laratrust::hasPermission('locker_customer edit') || \Laratrust::hasPermission('locker_customer delete')) {
-            $dataTable->addColumn('action', function (LockerCustomer $customer) {
-                return view('locker-and-safe-deposit::customer.action', compact('customer'));
+
+        if (\Laratrust::hasPermission('locker_location edit') || \Laratrust::hasPermission('locker_location delete')) {
+            $dataTable->addColumn('action', function (LockerLocation $location) {
+                return view('locker-and-safe-deposit::location.action', compact('location'));
             });
             $rowColumn[] = 'action';
         }
+
         return $dataTable->rawColumns($rowColumn);
     }
 
     /**
      * Get the query source of dataTable.
      */
-    public function query(LockerCustomer $model): QueryBuilder
+    public function query(LockerLocation $model): QueryBuilder
     {
-        return $model->where('workspace', getActiveWorkSpace())->where('created_by', creatorId());
+        return $model->newQuery()
+            ->where('workspace', getActiveWorkSpace())
+            ->where('created_by', creatorId());
     }
 
     /**
@@ -58,7 +60,7 @@ class CustomerDataTable extends DataTable
     public function html(): HtmlBuilder
     {
         $dataTable = $this->builder()
-            ->setTableId('customer-table')
+            ->setTableId('locker-location-table')
             ->columns($this->getColumns())
             ->minifiedAjax()
             ->orderBy(0)
@@ -89,19 +91,19 @@ class CustomerDataTable extends DataTable
                     'extend' => 'print',
                     'text' => '<i class="fas fa-print me-2"></i> ' . __('Print'),
                     'className' => 'btn btn-light text-primary dropdown-item',
-                    'exportOptions' => ['columns' => [0, 1, 2, 3, 4, 5, 6, 7]],
+                    'exportOptions' => ['columns' => [0, 1, 2, 3]],
                 ],
                 [
                     'extend' => 'csv',
                     'text' => '<i class="fas fa-file-csv me-2"></i> ' . __('CSV'),
                     'className' => 'btn btn-light text-primary dropdown-item',
-                    'exportOptions' => ['columns' => [0, 1, 2, 3, 4, 5, 6, 7]],
+                    'exportOptions' => ['columns' => [0, 1, 2, 3]],
                 ],
                 [
                     'extend' => 'excel',
                     'text' => '<i class="fas fa-file-excel me-2"></i> ' . __('Excel'),
                     'className' => 'btn btn-light text-primary dropdown-item',
-                    'exportOptions' => ['columns' => [0, 1, 2, 3, 4, 5, 6, 7]],
+                    'exportOptions' => ['columns' => [0, 1, 2, 3]],
                 ],
             ],
         ];
@@ -167,25 +169,19 @@ class CustomerDataTable extends DataTable
         $column = [
             Column::make('id')->searchable(false)->visible(false)->exportable(false)->printable(false),
             Column::make('No')->title(__('No'))->data('DT_RowIndex')->name('DT_RowIndex')->searchable(false)->orderable(false),
-            Column::make('first_name')->title(__('First Name')),
-            Column::make('last_name')->title(__('Last Name')),
-            Column::make('email')->title(__('Email')),
-            Column::make('phone')->title(__('Phone')),
-            Column::make('created_at')->title(__('Created At')),
-            Column::make('is_active')->title(__('Is Active')),
+            Column::make('building')->title(__('Building')),
+            Column::make('floor')->title(__('Floor')),
+            Column::make('section')->title(__('Section')),
             Column::make('address')->title(__('Address')),
         ];
-        if (\Laratrust::hasPermission('locker_customer edit') || \Laratrust::hasPermission('locker_customer delete')) {
-            $action =[
-                Column::computed('action')->title(__('Action'))
-                    ->exportable(false)
-                    ->printable(false)
-                    ->width(60)
-                    
-                ];
 
-            $column = array_merge($column , $action);
+        if (\Laratrust::hasPermission('locker_location edit') || \Laratrust::hasPermission('locker_location delete')) {
+            $column[] = Column::computed('action')->title(__('Action'))
+                ->exportable(false)
+                ->printable(false)
+                ->width(60);
         }
+
         return $column;
     }
 
@@ -194,6 +190,6 @@ class CustomerDataTable extends DataTable
      */
     protected function filename(): string
     {
-        return 'Customers_' . date('YmdHis');
+        return 'Location_' . date('YmdHis');
     }
 }
