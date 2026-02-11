@@ -51,6 +51,17 @@ class Locker extends Model
         return $this->hasMany(LockerBooking::class, 'locker_id');
     }
 
+    public function rentals()
+    {
+        return $this->hasMany(LockerRental::class, 'locker_id');
+    }
+
+    /** Full timeline for this locker: rentals, payments, reminders, etc. */
+    public function history()
+    {
+        return $this->hasMany(LockerLockerHistory::class, 'locker_id')->orderByDesc('occurred_at');
+    }
+
     /** Monthly rate in EUR (spec). For yearly use monthly_rate * 12. */
     public function getYearlyRateAttribute()
     {

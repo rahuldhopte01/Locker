@@ -40,4 +40,9 @@ class LockerCustomer extends Model
     {
         return $this->hasMany(LockerBooking::class, 'customer_id');
     }
+
+    public function rentals()
+    {
+        return $this->hasMany(LockerRental::class, 'customer_id');
+    }
 }
